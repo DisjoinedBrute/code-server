@@ -15,6 +15,19 @@ spec:
   selector:
     app: code-server
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: code-server
+  labels:
+    app: code-server
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,13 +44,21 @@ spec:
       labels:
         app: code-server
     spec:
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: code-server
       containers:
       - image: codercom/code-server:latest
         imagePullPolicy: Always
         name: code-server
+        args: ["--allow-http"]
+        ports:
+        - containerPort: 8080
         env:
         - name: PASSWORD
           value: "password"
-        securityContext:
-          allowPrivilegeEscalation: false
-          runAsUser: 0
+        volumeMounts:
+        - name: storage # must match the volume name, above
+          mountPath: "/home/coder/project"
+---
